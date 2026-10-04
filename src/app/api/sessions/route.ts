@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionsCollection, validateCheckIn, SessionStats, Subject } from "../../../../lib/db/models";
-import { getDb } from "../../../../lib/db/client";
+import { validateCheckIn, SessionStats, Subject } from "../../../lib/db/models";
+import { getSessionsCollection, getDb } from "../../../lib/db/client";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -59,11 +59,9 @@ export async function GET() {
       delete bySubj[k].totalProd;
     }
 
-    // Simplified streak calculation for MVP
     let streak = 0;
     let lastDate = new Date();
     for (const s of all) {
-        // very basic implementation, just checking if session is recent for MVP
         streak++; 
     }
 

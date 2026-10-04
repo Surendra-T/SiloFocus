@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { studyAgent } from "../../../../mastra/agents/studyAgent";
+import { studyAgent } from "../../../mastra/agents/studyAgent";
 import * as Sentry from "@sentry/nextjs";
 
 export const runtime = "nodejs";
@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
     }
     
-    const messages = [...history, { role: "user", content: \Subject: \\\nQuestion: \\ }];
+    const messages = [...history, { role: "user", content: `Subject: ${subject}\nQuestion: ${message}` }];
 
     return await Sentry.startSpan({ name: "gemma-doubt-solver", op: "ai.inference" }, async (span) => {
       try {
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
       } catch (err) {
         console.error("Inference error", err);
         Sentry.captureException(err);
-        return new Response("The local tutor (Gemma 2) isn't responding — is ollama serve running?", { status: 503 });
+        return new Response("The local tutor (Gemma 2) isn't responding — is `ollama serve` running?", { status: 503 });
       }
     });
 

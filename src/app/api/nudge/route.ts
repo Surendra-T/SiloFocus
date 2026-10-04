@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { nudgeAgent, buildNudgePrompt } from "../../../../mastra/agents/nudgeAgent";
-import { getSessionsCollection } from "../../../../lib/db/models";
+import { nudgeAgent, buildNudgePrompt } from "../../../mastra/agents/nudgeAgent";
+import { getSessionsCollection } from "../../../lib/db/client";
 import * as Sentry from "@sentry/nextjs";
 
 export const runtime = "nodejs";
@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     let history: any[] = [];
     try {
       const coll = await getSessionsCollection();
-      history = await coll.find({ subject: currentSubject }).sort({ completedAt: -1 }).limit(3).toArray();
+      history = await coll.find({ subject: currentSubject as any }).sort({ completedAt: -1 }).limit(3).toArray();
       if (history.length === 0) {
         history = await coll.find().sort({ completedAt: -1 }).limit(3).toArray();
       }

@@ -11,7 +11,7 @@ Strict formatting rules:
 If a question is ambiguous, state your assumptions clearly and proceed.`;
 
 export const studyAgent = new Agent({
-  name: "SiloFocus Tutor",
+  id: "study-tutor", name: "SiloFocus Tutor",
   instructions,
   model: {
     providerId: "ollama",

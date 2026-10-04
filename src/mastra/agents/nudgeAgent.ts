@@ -10,7 +10,7 @@ Your constraints:
 - End with a concrete, actionable micro-step to get back to studying.`;
 
 export const nudgeAgent = new Agent({
-  name: "SiloFocus Nudge",
+  id: "study-nudge", name: "SiloFocus Nudge",
   instructions,
   model: {
     providerId: "ollama",
