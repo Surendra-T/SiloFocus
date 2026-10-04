@@ -1,6 +1,6 @@
 import { formatClock, cn } from "../../lib/utils";
 
-export function PomodoroTimer({ remaining, max, phase }: { remaining: number, max: number, phase: string }) {
+export function PomodoroTimer({ remaining, max, phase }: { remaining: number, max: number, phase: string, subject?: string }) {
   const pct = Math.max(0, Math.min(100, (remaining / max) * 100));
   const r = 140;
   const c = 2 * Math.PI * r;

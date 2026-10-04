@@ -86,7 +86,7 @@ export default function Home() {
       const diff = Math.max(0, Math.ceil((endsAtRef.current - now) / 1000));
       setRemaining(diff);
       
-      document.title = \\ · \ — SiloFocus\;
+      document.title = `${formatClock(diff)} · ${subject} — SiloFocus`;
 
       if (diff === 0) {
         setIsRunning(false);
@@ -118,7 +118,6 @@ export default function Home() {
   const handleSkip = () => {
     setIsRunning(false);
     if (phase === "STUDY") {
-       // if studied < 1 min, just go to break directly
        if (sessionStartTime && (Date.now() - sessionStartTime) < 60_000) {
          setPhase("BREAK");
          setRemaining(BREAK_DURATION);
@@ -157,9 +156,9 @@ export default function Home() {
   };
 
   const handleIdle = useCallback(async (idleSeconds: number, reason: string) => {
-    if (nudgeState) return; // already showing
+    if (nudgeState) return; 
     const wasRunning = isRunning;
-    setIsRunning(false); // pause immediately
+    setIsRunning(false); 
     
     setNudgeState({ visible: true, text: "", wasRunning });
     
@@ -185,7 +184,6 @@ export default function Home() {
     if (!nudgeState) return;
     if (resume && nudgeState.wasRunning) {
       setIsRunning(true);
-      // adjust endsAt so we don't jump time
       endsAtRef.current = Date.now() + remaining * 1000;
     }
     setNudgeState(null);
@@ -202,7 +200,7 @@ export default function Home() {
               <button 
                 key={s} 
                 onClick={() => { setSubject(s as Subject); localStorage.setItem("silofocus-subject", s); }}
-                className={\px-4 py-1.5 rounded-full text-sm font-medium transition-colors \\}
+                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${s === subject ? 'bg-stone-200 dark:bg-stone-800' : 'opacity-60 hover:opacity-100'}`}
               >
                 {s}
               </button>

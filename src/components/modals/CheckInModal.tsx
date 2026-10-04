@@ -8,7 +8,7 @@ export function CheckInModal({ onSave, onSkip }: { onSave: (d: any) => void; onS
   const NumberRow = ({ val, setVal }: any) => (
     <div className="flex justify-between mt-2">
       {[1,2,3,4,5,6,7,8,9,10].map(n => (
-        <button key={n} onClick={() => setVal(n)} className={\w-8 h-8 rounded-full font-serif flex items-center justify-center transition-colors \\}>
+        <button key={n} onClick={() => setVal(n)} className={`w-8 h-8 rounded-full font-serif flex items-center justify-center transition-colors ${n === val ? 'bg-racing text-white dark:bg-racing-400' : 'hover:bg-stone-200 dark:hover:bg-stone-800'}`}>
           {n}
         </button>
       ))}

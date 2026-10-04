@@ -29,7 +29,7 @@ export default function RootLayout({
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: \
+            __html: `
               try {
                 if (localStorage.getItem('silofocus-theme') === 'dark' || (!('silofocus-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
                   document.documentElement.classList.add('dark')
@@ -37,11 +37,11 @@ export default function RootLayout({
                   document.documentElement.classList.remove('dark')
                 }
               } catch (_) {}
-            \,
+            `,
           }}
         />
       </head>
-      <body className={\\ \ font-sans antialiased min-h-screen flex flex-col\}>
+      <body className={`${sans.variable} ${serif.variable} font-sans antialiased min-h-screen flex flex-col`}>
         <ThemeProvider>
           {children}
         </ThemeProvider>

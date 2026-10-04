@@ -18,7 +18,7 @@ export function SpotifyEmbed({ phase }: { phase: "STUDY" | "BREAK" }) {
         <iframe 
           key={url}
           className="w-full"
-          src={\https://open.spotify.com/embed/playlist/\?utm_source=generator&theme=0\} 
+          src={`https://open.spotify.com/embed/playlist/${url}?utm_source=generator&theme=0`} 
           width="100%" 
           height="152" 
           frameBorder="0" 

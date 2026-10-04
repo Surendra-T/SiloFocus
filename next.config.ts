@@ -1,13 +1,9 @@
 import type { NextConfig } from "next";
-import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ["@mastra/core", "mongodb"],
   reactStrictMode: true,
+  allowedDevOrigins: ['127.0.0.1'],
 };
 
-export default withSentryConfig(nextConfig, {
-  silent: true,
-  telemetry: false,
-  sourcemaps: { disable: !process.env.SENTRY_AUTH_TOKEN },
-});
+export default nextConfig;

@@ -8,6 +8,6 @@ if (isValidDsn) {
     dsn,
     tracesSampleRate: process.env.NODE_ENV === "production" ? 0.2 : 1.0,
     enabled: true,
-    sendDefaultPii: false,
+    
   });
 }
