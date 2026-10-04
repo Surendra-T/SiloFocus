@@ -2,33 +2,165 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --bg: #FBFBF9;
-  --surface: rgba(244, 244, 245, 0.7);
-  --ink: #1c1917;
-  --accent: #1E3A2F;
-  --brass: #B08D57;
+/* ------------------------------------------------------------------ palettes
+   Channels are space-separated RGB so Tailwind opacity modifiers work (bg-panel/70). */
+:root,
+[data-palette="heritage"] {
+  --c-canvas: 250 248 245; /* warm parchment #FAF8F5 */
+  --c-panel: 255 253 249;
+  --c-ink: 31 27 24;
+  --c-subtle: 108 99 89;
+  --c-edge: 202 184 150; /* polished brass hairline */
+  --c-accent: 30 58 47; /* British racing green #1E3A2F */
+  --c-onaccent: 250 248 245;
+  --c-glow: 176 141 87; /* brass */
+  --shadow-glow: 0 1px 2px rgb(31 27 24 / 0.04), 0 12px 32px -16px rgb(30 58 47 / 0.18);
+  --font-heading: var(--font-serif);
 }
 
-.dark {
-  --bg: #0c0a09;
-  --surface: rgba(28, 25, 23, 0.6);
-  --ink: #f5f5f4;
-  --accent: #3F6B58;
-  --brass: #CDB07E;
+[data-palette="dark-academia"] {
+  --c-canvas: 28 22 20; /* deep espresso #1C1614 */
+  --c-panel: 40 32 28;
+  --c-ink: 233 221 198; /* antique parchment */
+  --c-subtle: 166 150 126;
+  --c-edge: 94 76 58; /* sepia */
+  --c-accent: 201 169 110;
+  --c-onaccent: 28 22 20;
+  --c-glow: 214 178 120;
+  --shadow-glow: 0 1px 2px rgb(0 0 0 / 0.3), 0 16px 40px -18px rgb(0 0 0 / 0.6);
+  --font-heading: var(--font-roman);
 }
 
-body {
-  background-color: var(--bg);
-  color: var(--ink);
+[data-palette="wabi-sabi"] {
+  --c-canvas: 244 239 234; /* raw sandstone #F4EFEA */
+  --c-panel: 236 229 220;
+  --c-ink: 38 36 33; /* sumi ink */
+  --c-subtle: 105 102 92;
+  --c-edge: 208 199 185;
+  --c-accent: 107 112 71; /* bamboo olive */
+  --c-onaccent: 244 239 234;
+  --c-glow: 140 146 96;
+  --shadow-glow: 0 1px 2px rgb(38 36 33 / 0.03), 0 18px 36px -22px rgb(107 112 71 / 0.25);
+  --font-heading: var(--font-serif);
 }
 
-::selection {
-  background-color: rgba(176, 141, 87, 0.15);
-  color: inherit;
+[data-palette="nordic"] {
+  --c-canvas: 255 255 255;
+  --c-panel: 255 255 255;
+  --c-ink: 0 0 0;
+  --c-subtle: 82 82 82;
+  --c-edge: 214 211 209; /* stone-300 hairline */
+  --c-accent: 0 0 0;
+  --c-onaccent: 255 255 255;
+  --c-glow: 0 0 0;
+  --shadow-glow: none;
+  --font-heading: var(--font-sans);
 }
 
-/* Scrollbars */
+[data-palette="obsidian"] {
+  --c-canvas: 0 0 0; /* true OLED */
+  --c-panel: 18 18 18; /* graphite */
+  --c-ink: 236 232 225;
+  --c-subtle: 150 146 138;
+  --c-edge: 48 46 42;
+  --c-accent: 224 160 70; /* muted amber */
+  --c-onaccent: 0 0 0;
+  --c-glow: 232 170 85; /* tungsten */
+  --shadow-glow: 0 0 0 1px rgb(232 170 85 / 0.04), 0 0 60px -12px rgb(232 170 85 / 0.14);
+  --font-heading: var(--font-serif);
+}
+
+/* Optional heading typography override (Settings > Typography) */
+[data-heading="serif"] {
+  --font-heading: var(--font-serif);
+}
+[data-heading="sans"] {
+  --font-heading: var(--font-sans);
+}
+[data-heading="roman"] {
+  --font-heading: var(--font-roman);
+}
+
+/* -------------------------------------------------------------------- base */
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-canvas font-sans text-ink antialiased;
+    transition: background-color 0.5s cubic-bezier(0.22, 1, 0.36, 1), color 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  ::selection {
+    background-color: rgb(var(--c-glow) / 0.22);
+  }
+  :focus-visible {
+    outline: 2px solid rgb(var(--c-glow) / 0.7);
+    outline-offset: 2px;
+  }
+  h1,
+  h2,
+  h3 {
+    @apply font-serif tracking-tight;
+  }
+}
+
+/* -------------------------------------------------------------- components */
+@layer components {
+  .card {
+    @apply rounded-2xl border border-edge/70 bg-panel/70 shadow-glow backdrop-blur-sm transition-all duration-300 ease-silk;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all duration-300 ease-silk disabled:pointer-events-none disabled:opacity-40;
+  }
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-accent px-4 py-2 text-sm font-medium text-onaccent transition-all duration-300 ease-silk hover:opacity-90 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-edge/80 px-4 py-2 text-sm font-medium text-ink transition-all duration-300 ease-silk hover:bg-ink/5 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40;
+  }
+  .icon-btn {
+    @apply inline-flex h-9 w-9 items-center justify-center rounded-full text-subtle transition-all duration-300 ease-silk hover:bg-ink/5 hover:text-ink disabled:pointer-events-none disabled:opacity-40;
+  }
+  .chip {
+    @apply inline-flex items-center rounded-full border border-edge/80 px-3 py-1 text-xs font-medium text-subtle transition-all duration-300 ease-silk hover:text-ink disabled:pointer-events-none disabled:opacity-40;
+  }
+  .chip-active {
+    @apply border-accent bg-accent text-onaccent hover:text-onaccent;
+  }
+  .field {
+    @apply w-full rounded-xl border border-edge/80 bg-transparent px-3 py-2 text-sm text-ink transition-colors duration-300 placeholder:text-subtle/70 focus:border-glow focus:outline-none;
+  }
+  .eyebrow {
+    @apply text-[11px] font-medium uppercase tracking-[0.2em] text-subtle;
+  }
+  .overlay {
+    @apply fixed inset-0 bg-canvas/60 backdrop-blur-sm;
+  }
+  .prose-silo {
+    --tw-prose-body: rgb(var(--c-ink));
+    --tw-prose-headings: rgb(var(--c-ink));
+    --tw-prose-lead: rgb(var(--c-subtle));
+    --tw-prose-links: rgb(var(--c-glow));
+    --tw-prose-bold: rgb(var(--c-ink));
+    --tw-prose-counters: rgb(var(--c-subtle));
+    --tw-prose-bullets: rgb(var(--c-subtle));
+    --tw-prose-hr: rgb(var(--c-edge));
+    --tw-prose-quotes: rgb(var(--c-ink));
+    --tw-prose-quote-borders: rgb(var(--c-glow));
+    --tw-prose-captions: rgb(var(--c-subtle));
+    --tw-prose-code: rgb(var(--c-ink));
+    --tw-prose-pre-code: #e6e1d8;
+    --tw-prose-pre-bg: #1b1a18;
+    --tw-prose-th-borders: rgb(var(--c-edge));
+    --tw-prose-td-borders: rgb(var(--c-edge));
+  }
+}
+
+/* ------------------------------------------------------------------ scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--c-glow) / 0.4) transparent;
+}
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -37,25 +169,74 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(176, 141, 87, 0.3);
+  background: rgb(var(--c-glow) / 0.35);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(176, 141, 87, 0.5);
+  background: rgb(var(--c-glow) / 0.55);
 }
 
-/* KaTeX custom color inherits */
+/* ------------------------------------------------------------------ KaTeX */
 .katex {
-  color: inherit !important;
+  color: inherit;
 }
 .katex-display {
   overflow-x: auto;
   overflow-y: hidden;
-  padding: 0.5rem 0;
+  padding: 0.35rem 0;
 }
 
+/* --------------------------------------------------- kinetic split-flap clock */
+.flap {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 50%;
+  overflow: hidden;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  background: rgb(var(--c-panel));
+}
+.flap-top {
+  top: 0;
+  transform-origin: bottom center;
+  border-radius: 0.14em 0.14em 0 0;
+}
+.flap-bottom {
+  bottom: 0;
+  transform-origin: top center;
+  border-radius: 0 0 0.14em 0.14em;
+}
+.flap-top-anim {
+  z-index: 3;
+  animation: flap-top 0.32s cubic-bezier(0.4, 0, 0.8, 0.6) forwards;
+}
+.flap-bottom-anim {
+  z-index: 3;
+  animation: flap-bottom 0.32s cubic-bezier(0.2, 0.6, 0.3, 1) 0.16s both;
+}
+@keyframes flap-top {
+  from {
+    transform: rotateX(0deg);
+  }
+  to {
+    transform: rotateX(-180deg);
+  }
+}
+@keyframes flap-bottom {
+  from {
+    transform: rotateX(90deg);
+  }
+  to {
+    transform: rotateX(0deg);
+  }
+}
+
+/* ------------------------------------------------------------ reduced motion */
 @media (prefers-reduced-motion: reduce) {
-  *, ::before, ::after {
+  *,
+  ::before,
+  ::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;

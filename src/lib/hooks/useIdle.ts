@@ -1,93 +1,101 @@
+"use client";
+
 import { useEffect, useRef } from "react";
+
+export type IdleReason = "hidden" | "inactive";
 
 interface UseIdleOptions {
   enabled: boolean;
+  /** No keyboard/mouse input for this long while the tab is visible. */
   idleThresholdMs?: number;
+  /** Tab hidden or window unfocused for this long. */
   hiddenThresholdMs?: number;
-  onIdle: (idleSeconds: number, reason: "hidden" | "inactive") => void;
+  onIdle: (idleSeconds: number, reason: IdleReason) => void;
 }
 
-export function useIdle({
-  enabled,
-  idleThresholdMs = 60_000,
-  hiddenThresholdMs = 30_000,
-  onIdle,
-}: UseIdleOptions) {
-  const lastActiveRef = useRef(Date.now());
-  const hiddenStartRef = useRef<number | null>(null);
+/**
+ * Detects abandonment during a study session. Fires once per episode and re-arms on activity.
+ * Focus moving into a cross-origin iframe (the Spotify player) counts as activity, not absence.
+ */
+export function useIdle({ enabled, idleThresholdMs = 60_000, hiddenThresholdMs = 30_000, onIdle }: UseIdleOptions) {
   const onIdleRef = useRef(onIdle);
-  const firedRef = useRef(false);
 
   useEffect(() => {
     onIdleRef.current = onIdle;
-  }, [onIdle]);
+  });
 
   useEffect(() => {
-    if (!enabled) {
-      firedRef.current = false;
-      return;
-    }
+    if (!enabled) return;
 
-    lastActiveRef.current = Date.now();
-    let throttleTimer: NodeJS.Timeout | null = null;
-    
-    const handleActivity = () => {
-      if (throttleTimer) return;
-      throttleTimer = setTimeout(() => { throttleTimer = null; }, 1000);
-      lastActiveRef.current = Date.now();
-      firedRef.current = false; // re-arm on activity
+    let lastActive = Date.now();
+    let awaySince: number | null = document.visibilityState === "hidden" ? Date.now() : null;
+    let fired = false;
+    let lastInput = 0;
+
+    const iframeFocused = () => document.activeElement instanceof HTMLIFrameElement;
+
+    const markActive = () => {
+      lastActive = Date.now();
+      awaySince = null;
+      fired = false;
     };
 
-    const handleVisibility = () => {
-      if (document.visibilityState === "hidden") {
-        hiddenStartRef.current = Date.now();
-      } else {
-        hiddenStartRef.current = null;
-        handleActivity();
-      }
-    };
-
-    window.addEventListener("mousemove", handleActivity, { passive: true });
-    window.addEventListener("keydown", handleActivity, { passive: true });
-    window.addEventListener("pointerdown", handleActivity, { passive: true });
-    window.addEventListener("wheel", handleActivity, { passive: true });
-    window.addEventListener("touchstart", handleActivity, { passive: true });
-    document.addEventListener("visibilitychange", handleVisibility);
-    window.addEventListener("focus", handleActivity);
-    window.addEventListener("blur", () => {
-      if (document.visibilityState !== "hidden" && !hiddenStartRef.current) {
-        hiddenStartRef.current = Date.now();
-      }
-    });
-
-    const interval = setInterval(() => {
-      if (firedRef.current) return;
+    const onInput = () => {
       const now = Date.now();
-      
-      // Check hidden
-      if (hiddenStartRef.current && now - hiddenStartRef.current >= hiddenThresholdMs) {
-        firedRef.current = true;
-        onIdleRef.current(Math.floor((now - hiddenStartRef.current) / 1000), "hidden");
-        return;
+      if (now - lastInput < 1000) return;
+      lastInput = now;
+      markActive();
+    };
+
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") awaySince = awaySince ?? Date.now();
+      else markActive();
+    };
+
+    const onBlur = () => {
+      window.setTimeout(() => {
+        if (document.visibilityState === "hidden") return;
+        if (iframeFocused()) {
+          markActive();
+          return;
+        }
+        awaySince = awaySince ?? Date.now();
+      }, 0);
+    };
+
+    const inputEvents = ["mousemove", "keydown", "pointerdown", "wheel", "touchstart"] as const;
+    inputEvents.forEach((e) => window.addEventListener(e, onInput, { passive: true }));
+    window.addEventListener("focus", markActive);
+    window.addEventListener("blur", onBlur);
+    document.addEventListener("visibilitychange", onVisibility);
+
+    const interval = window.setInterval(() => {
+      if (fired) return;
+      const now = Date.now();
+
+      if (awaySince !== null) {
+        if (document.visibilityState !== "hidden" && iframeFocused()) {
+          markActive();
+          return;
+        }
+        if (now - awaySince >= hiddenThresholdMs) {
+          fired = true;
+          onIdleRef.current(Math.floor((now - awaySince) / 1000), "hidden");
+          return;
+        }
       }
-      
-      // Check idle
-      if (now - lastActiveRef.current >= idleThresholdMs) {
-        firedRef.current = true;
-        onIdleRef.current(Math.floor((now - lastActiveRef.current) / 1000), "inactive");
+      if (now - lastActive >= idleThresholdMs) {
+        fired = true;
+        onIdleRef.current(Math.floor((now - lastActive) / 1000), "inactive");
       }
     }, 1000);
 
     return () => {
-      window.removeEventListener("mousemove", handleActivity);
-      window.removeEventListener("keydown", handleActivity);
-      window.removeEventListener("pointerdown", handleActivity);
-      window.removeEventListener("wheel", handleActivity);
-      window.removeEventListener("touchstart", handleActivity);
-      document.removeEventListener("visibilitychange", handleVisibility);
-      window.removeEventListener("focus", handleActivity);
-      window.removeEventListener("blur", handleActivity);
-      clearInterval(interval);
+      inputEvents.forEach((e) => window.removeEventListener(e, onInput));
+      window.removeEventListener("focus", markActive);
+      window.removeEventListener("blur", onBlur);
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.clearInterval(interval);
     };
   }, [enabled, idleThresholdMs, hiddenThresholdMs]);
 }

@@ -1,264 +1,534 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useCallback, useEffect, useState, useMemo } from "react";
 import { Header } from "../components/common/Header";
 import { PomodoroTimer } from "../components/timer/PomodoroTimer";
 import { Controls } from "../components/timer/Controls";
+import { TodoList } from "../components/tasks/TodoList";
 import { SpotifyEmbed } from "../components/audio/SpotifyEmbed";
+import { AmbientSoundControls } from "../components/audio/AmbientSoundControls";
 import { DoubtSidebar } from "../components/chat/DoubtSidebar";
+import { FormulaDrawer } from "../components/chat/FormulaDrawer";
 import { CheckInModal } from "../components/modals/CheckInModal";
+import { SocraticModal } from "../components/modals/SocraticModal";
+import { ExecutiveBriefModal } from "../components/modals/ExecutiveBriefModal";
 import { InterceptorToast } from "../components/modals/InterceptorToast";
+import { SettingsPanel } from "../components/common/SettingsPanel";
+import { CommandPalette, type PaletteCommand } from "../components/common/CommandPalette";
+import { GrainOverlay } from "../components/common/GrainOverlay";
+
+import { useSettingsStore, setSubject } from "../lib/hooks/useSettingsStore";
+import { useThemeStore } from "../lib/hooks/useThemeStore";
+import { useTasksStore } from "../lib/hooks/useTasksStore";
+import { useJournalToday, journalStore } from "../lib/hooks/useJournalStore";
+import { downloadJournal } from "../lib/utils/exportJournal";
+import { soundEngine } from "../lib/audio/soundEngine";
+import { useTimer, type TickInfo } from "../lib/hooks/useTimer";
 import { useIdle } from "../lib/hooks/useIdle";
-import { Subject, SessionStats } from "../lib/db/models";
-import { MessageSquareText } from "lucide-react";
-import { formatClock } from "../lib/utils";
-
-const STUDY_DURATION = 25 * 60;
-const BREAK_DURATION = 5 * 60;
-
-type Phase = "STUDY" | "CHECK_IN" | "BREAK";
+import { useDynamicFavicon } from "../lib/hooks/useDynamicFavicon";
+import { MessageSquareText, Sigma, Minimize2 } from "lucide-react";
+import { cn } from "../lib/utils";
 
 export default function Home() {
-  const [phase, setPhase] = useState<Phase>("STUDY");
-  const [subject, setSubject] = useState<Subject>("Physics");
-  const [isRunning, setIsRunning] = useState(false);
-  const [remaining, setRemaining] = useState(STUDY_DURATION);
-  const [stats, setStats] = useState<SessionStats | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  
+  const { settings, update: updateSettings } = useSettingsStore();
+  const theme = useThemeStore();
+  const tasks = useTasksStore();
+  const todayJournal = useJournalToday();
+
+  // Dialog and drawer state
+  const [doubtOpen, setDoubtOpen] = useState(false);
+  const [formulaOpen, setFormulaOpen] = useState(false);
+  const [briefOpen, setBriefOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [zenMode, setZenMode] = useState(false);
+
+  // Interceptor and reflection state
   const [nudgeState, setNudgeState] = useState<{ visible: boolean; text: string; wasRunning: boolean } | null>(null);
+  const [socraticActive, setSocraticActive] = useState(false);
+  const [streak, setStreak] = useState(0);
 
-  const endsAtRef = useRef<number | null>(null);
-  const audioCtxRef = useRef<AudioContext | null>(null);
-  
-  const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
-
+  // Sync sound engine levels
   useEffect(() => {
-    const savedSubj = localStorage.getItem("silofocus-subject") as Subject;
-    if (savedSubj) setSubject(savedSubj);
-    fetchStats();
+    soundEngine.configure({
+      muted: settings.muted,
+      masterVolume: settings.masterVolume,
+      tickVolume: settings.tickVolume,
+      chimeVolume: settings.chimeVolume,
+    });
+  }, [settings.muted, settings.masterVolume, settings.tickVolume, settings.chimeVolume]);
+
+  // Fetch streak from /api/sessions
+  const fetchStreak = useCallback(async () => {
+    try {
+      const tz = new Date().getTimezoneOffset();
+      const res = await fetch(`/api/sessions?tz=${tz}`);
+      if (res.ok) {
+        const data = await res.json();
+        setStreak(data.currentStreak || 0);
+      }
+    } catch {
+      // offline / failure handled gracefully
+    }
   }, []);
 
-  const fetchStats = async () => {
-    try {
-      const res = await fetch("/api/sessions");
-      if (res.ok) setStats(await res.json());
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const playChime = () => {
-    try {
-      if (!audioCtxRef.current) audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const ctx = audioCtxRef.current;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(523.25, ctx.currentTime);
-      gain.gain.setValueAtTime(0, ctx.currentTime);
-      gain.gain.linearRampToValueAtTime(0.5, ctx.currentTime + 0.1);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 2);
-      osc.start(ctx.currentTime);
-      osc.stop(ctx.currentTime + 2);
-    } catch(e) {}
-  };
-
   useEffect(() => {
-    if (!isRunning) {
-      endsAtRef.current = null;
-      return;
-    }
-    
-    if (!endsAtRef.current) {
-      endsAtRef.current = Date.now() + remaining * 1000;
-    }
-    
-    if (phase === "STUDY" && sessionStartTime === null) {
-      setSessionStartTime(Date.now());
-    }
+    fetchStreak();
+  }, [fetchStreak]);
 
-    const interval = setInterval(() => {
-      if (!endsAtRef.current) return;
-      const now = Date.now();
-      const diff = Math.max(0, Math.ceil((endsAtRef.current - now) / 1000));
-      setRemaining(diff);
-      
-      document.title = `${formatClock(diff)} · ${subject} — SiloFocus`;
-
-      if (diff === 0) {
-        setIsRunning(false);
-        playChime();
-        if (phase === "STUDY") setPhase("CHECK_IN");
-        else if (phase === "BREAK") { setPhase("STUDY"); setRemaining(STUDY_DURATION); }
+  // Timer callbacks
+  const handleTick = useCallback(
+    (info: TickInfo) => {
+      if (info.phase === "STUDY" && settings.tickPreset !== "off") {
+        soundEngine.tick(settings.tickPreset);
       }
-    }, 500);
+    },
+    [settings.tickPreset],
+  );
 
-    return () => clearInterval(interval);
-  }, [isRunning, phase, remaining, subject, sessionStartTime]);
-
-  useEffect(() => {
-    if (!isRunning) document.title = "SiloFocus";
-  }, [isRunning]);
-
-  const toggleTimer = () => {
-    setIsRunning(!isRunning);
-    if (!isRunning) endsAtRef.current = null;
-  };
-
-  const resetTimer = () => {
-    setIsRunning(false);
-    setRemaining(phase === "STUDY" ? STUDY_DURATION : BREAK_DURATION);
-    endsAtRef.current = null;
-    if (phase === "STUDY") setSessionStartTime(null);
-  };
-
-  const handleSkip = () => {
-    setIsRunning(false);
-    if (phase === "STUDY") {
-       if (sessionStartTime && (Date.now() - sessionStartTime) < 60_000) {
-         setPhase("BREAK");
-         setRemaining(BREAK_DURATION);
-       } else {
-         setPhase("CHECK_IN");
-       }
-    } else {
-       setPhase("STUDY");
-       setRemaining(STUDY_DURATION);
+  const handleStudyComplete = useCallback(() => {
+    soundEngine.chime(settings.chimePreset);
+    if (settings.socratic) {
+      setSocraticActive(true);
     }
-  };
+  }, [settings.chimePreset, settings.socratic]);
 
-  const handleCheckInSave = async (data: any) => {
-    setPhase("BREAK");
-    setRemaining(BREAK_DURATION);
-    setSessionStartTime(null);
-    setIsRunning(true);
-    
-    const actualDuration = STUDY_DURATION - remaining;
-    
-    try {
-      await fetch("/api/sessions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...data, subject, durationMinutes: Math.ceil(actualDuration / 60) })
-      });
-      fetchStats();
-    } catch(e) { console.error(e); }
-  };
+  const handleBreakComplete = useCallback(() => {
+    soundEngine.chime(settings.chimePreset);
+  }, [settings.chimePreset]);
 
-  const handleCheckInSkip = () => {
-    setPhase("BREAK");
-    setRemaining(BREAK_DURATION);
-    setSessionStartTime(null);
-    setIsRunning(true);
-  };
+  // Main timer engine
+  const timer = useTimer(
+    {
+      studyMin: settings.studyMin,
+      breakMin: settings.breakMin,
+      flow: settings.flow,
+    },
+    {
+      onTick: handleTick,
+      onStudyComplete: handleStudyComplete,
+      onBreakComplete: handleBreakComplete,
+    },
+  );
 
-  const handleIdle = useCallback(async (idleSeconds: number, reason: string) => {
-    if (nudgeState) return; 
-    const wasRunning = isRunning;
-    setIsRunning(false); 
-    
-    setNudgeState({ visible: true, text: "", wasRunning });
-    
-    try {
-      const res = await fetch("/api/nudge", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idleTimeSeconds: idleSeconds, currentSubject: subject })
-      });
-      const data = await res.json();
-      setNudgeState(prev => prev ? { ...prev, text: data.nudge || "Time to focus." } : null);
-    } catch (e) {
-      setNudgeState(prev => prev ? { ...prev, text: "You've been away for a moment. Let's lock back in." } : null);
-    }
-  }, [isRunning, subject, nudgeState]);
+  // Dynamic favicon & tab title
+  useDynamicFavicon({
+    seconds: timer.seconds,
+    progress: timer.progress,
+    subject: settings.subject,
+    running: timer.running,
+  });
+
+  // Idle and tab-abandonment interceptor
+  const handleIdle = useCallback(
+    async (idleSeconds: number) => {
+      if (nudgeState) return;
+      const wasRunning = timer.running;
+      timer.pause();
+      setNudgeState({ visible: true, text: "", wasRunning });
+
+      try {
+        const res = await fetch("/api/nudge", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ idleTimeSeconds: idleSeconds, currentSubject: settings.subject }),
+        });
+        const data = await res.json();
+        setNudgeState((prev) => (prev ? { ...prev, text: data.nudge || "Time to refocus." } : null));
+      } catch {
+        setNudgeState((prev) =>
+          prev ? { ...prev, text: "You've been away for a moment. Let's finish what we started." } : null,
+        );
+      }
+    },
+    [timer, settings.subject, nudgeState],
+  );
 
   useIdle({
-    enabled: phase === "STUDY" && isRunning && !sidebarOpen,
-    onIdle: handleIdle
+    enabled: timer.phase === "STUDY" && timer.running && !doubtOpen && !formulaOpen,
+    onIdle: handleIdle,
   });
 
   const dismissNudge = (resume: boolean) => {
     if (!nudgeState) return;
     if (resume && nudgeState.wasRunning) {
-      setIsRunning(true);
-      endsAtRef.current = Date.now() + remaining * 1000;
+      soundEngine.unlock();
+      timer.start();
     }
     setNudgeState(null);
   };
 
+  // Keyboard shortcut listener (Cmd+K / Ctrl+K and Zen mode 'F')
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger shortcuts inside text inputs or textareas
+      const target = e.target as HTMLElement;
+      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable) {
+        return;
+      }
+
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setCommandPaletteOpen((prev) => !prev);
+      } else if (e.key.toLowerCase() === "f" && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        e.preventDefault();
+        setZenMode((prev) => !prev);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  // Save session to MongoDB & journal store
+  const handleCheckInSave = async (data: { moodScore: number; productivityScore: number; notes: string }) => {
+    const minutes = Math.max(1, Math.round(timer.lastStudySec / 60));
+    timer.startBreak({ autoStart: true });
+
+    // Save locally to journal immediately
+    journalStore.addFocusBlock({
+      subject: settings.subject,
+      minutes,
+      completedAt: new Date().toISOString(),
+      mood: data.moodScore,
+      productivity: data.productivityScore,
+      notes: data.notes,
+    });
+
+    try {
+      await fetch("/api/sessions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          subject: settings.subject,
+          durationMinutes: minutes,
+          moodScore: data.moodScore,
+          productivityScore: data.productivityScore,
+          notes: data.notes,
+        }),
+      });
+      fetchStreak();
+    } catch (err) {
+      console.error("Failed to persist session to database", err);
+    }
+  };
+
+  const handleCheckInSkip = () => {
+    timer.startBreak({ autoStart: true });
+  };
+
+  // Export journal handler
+  const handleExportJournal = () => {
+    downloadJournal(todayJournal, tasks);
+  };
+
+  // Commands for spotlight palette
+  const commands: PaletteCommand[] = useMemo(
+    () => [
+      {
+        id: "timer-toggle",
+        title: timer.running ? "Pause Timer" : "Start Timer",
+        group: "Timer",
+        shortcut: "Space",
+        run: () => {
+          soundEngine.unlock();
+          timer.toggle();
+        },
+      },
+      {
+        id: "timer-reset",
+        title: "Reset Timer",
+        group: "Timer",
+        run: () => timer.reset(),
+      },
+      {
+        id: "timer-study",
+        title: "Switch to Study Mode",
+        group: "Timer",
+        run: () => timer.startStudy(false),
+      },
+      {
+        id: "timer-break",
+        title: "Switch to Break Mode",
+        group: "Timer",
+        run: () => timer.startBreak({ autoStart: false }),
+      },
+      {
+        id: "toggle-flow",
+        title: settings.flow ? "Disable Flowmodoro (Countdown)" : "Enable Flowmodoro (Count-up)",
+        group: "Timer",
+        run: () => updateSettings({ flow: !settings.flow }),
+      },
+      {
+        id: "toggle-zen",
+        title: zenMode ? "Exit Zen Mode" : "Enter Monastic Zen Mode",
+        group: "View",
+        shortcut: "F",
+        run: () => setZenMode((prev) => !prev),
+      },
+      {
+        id: "open-brief",
+        title: "Open Executive Intel Brief",
+        group: "Insights",
+        run: () => setBriefOpen(true),
+      },
+      {
+        id: "open-formulas",
+        title: "Open Formula Sheet",
+        group: "Study Tools",
+        run: () => setFormulaOpen(true),
+      },
+      {
+        id: "open-doubts",
+        title: "Open Doubt Solver",
+        group: "Study Tools",
+        run: () => setDoubtOpen(true),
+      },
+      {
+        id: "export-journal",
+        title: "Export Daily Journal (Markdown)",
+        group: "Workspace",
+        run: handleExportJournal,
+      },
+      {
+        id: "open-settings",
+        title: "Open Settings",
+        group: "Workspace",
+        run: () => setSettingsOpen(true),
+      },
+      // Palettes
+      {
+        id: "palette-heritage",
+        title: "Palette: Old Money Heritage",
+        group: "Appearance",
+        run: () => theme.setPalette("heritage"),
+      },
+      {
+        id: "palette-dark-academia",
+        title: "Palette: Dark Academia",
+        group: "Appearance",
+        run: () => theme.setPalette("dark-academia"),
+      },
+      {
+        id: "palette-wabi-sabi",
+        title: "Palette: Kyoto Wabi-Sabi",
+        group: "Appearance",
+        run: () => theme.setPalette("wabi-sabi"),
+      },
+      {
+        id: "palette-nordic",
+        title: "Palette: Nordic Mono",
+        group: "Appearance",
+        run: () => theme.setPalette("nordic"),
+      },
+      {
+        id: "palette-obsidian",
+        title: "Palette: Midnight Obsidian",
+        group: "Appearance",
+        run: () => theme.setPalette("obsidian"),
+      },
+      // Topologies
+      {
+        id: "topo-radial",
+        title: "Topology: Editorial Radial",
+        group: "Timepiece",
+        run: () => updateSettings({ topology: "radial" }),
+      },
+      {
+        id: "topo-flip",
+        title: "Topology: Split-Flap Clock",
+        group: "Timepiece",
+        run: () => updateSettings({ topology: "flip" }),
+      },
+      {
+        id: "topo-analog",
+        title: "Topology: Bauhaus Analog",
+        group: "Timepiece",
+        run: () => updateSettings({ topology: "analog" }),
+      },
+      {
+        id: "topo-linear",
+        title: "Topology: Linear Pillar",
+        group: "Timepiece",
+        run: () => updateSettings({ topology: "linear" }),
+      },
+    ],
+    [timer, settings.flow, zenMode, theme, updateSettings],
+  );
+
   return (
-    <div className="flex-1 flex flex-col relative overflow-hidden">
-      <Header subject={subject} streak={stats?.currentStreak || 0} />
-      
-      <main className="flex-1 max-w-xl mx-auto w-full px-6 flex flex-col pt-8">
-        {phase === "STUDY" && !isRunning && remaining === STUDY_DURATION && (
-          <div className="flex justify-center gap-4 mb-4 z-10">
-            {["Physics", "Chemistry", "Mathematics"].map((s) => (
-              <button 
-                key={s} 
-                onClick={() => { setSubject(s as Subject); localStorage.setItem("silofocus-subject", s); }}
-                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${s === subject ? 'bg-stone-200 dark:bg-stone-800' : 'opacity-60 hover:opacity-100'}`}
-              >
-                {s}
-              </button>
-            ))}
-          </div>
+    <div className="min-h-screen flex flex-col relative overflow-x-hidden selection:bg-glow/20">
+      <GrainOverlay enabled={theme.grain} />
+
+      {/* Monastic Zen Mode overlay exit button */}
+      {zenMode && (
+        <button
+          type="button"
+          onClick={() => setZenMode(false)}
+          className="fixed top-6 right-6 z-50 btn-ghost bg-canvas/80 backdrop-blur-md shadow-sm gap-2"
+          aria-label="Exit Zen Mode (F)"
+        >
+          <Minimize2 className="h-4 w-4" />
+          <span>Exit Zen (F)</span>
+        </button>
+      )}
+
+      {/* Standard Header (fades out during Zen Mode) */}
+      <div
+        className={cn(
+          "transition-opacity duration-500",
+          zenMode ? "opacity-0 pointer-events-none" : "opacity-100",
         )}
-        
-        <PomodoroTimer 
-          remaining={remaining} 
-          max={phase === "STUDY" ? STUDY_DURATION : BREAK_DURATION} 
-          phase={phase} 
-          subject={subject}
+      >
+        <Header
+          subject={settings.subject}
+          recentSubjects={settings.recentSubjects}
+          streak={streak}
+          palette={theme.palette}
+          onSubjectChange={(subj) => setSubject(subj)}
+          onPaletteChange={(pal) => theme.setPalette(pal)}
+          onToggleZen={() => setZenMode(true)}
+          onOpenSettings={() => setSettingsOpen(true)}
+          onOpenBrief={() => setBriefOpen(true)}
+          onOpenFormulas={() => setFormulaOpen(true)}
+          onOpenPalette={() => setCommandPaletteOpen(true)}
         />
-        
-        <div className="mt-8">
-          <Controls 
-            running={isRunning} 
-            onToggle={toggleTimer} 
-            onReset={resetTimer} 
-            onSkip={handleSkip} 
-            phase={phase} 
+      </div>
+
+      {/* Main Focus Stage */}
+      <main className="flex-1 flex flex-col items-center justify-center px-4 py-6 w-full max-w-2xl mx-auto">
+        {/* Timepiece & Controls */}
+        <div
+          className={cn(
+            "w-full flex flex-col items-center transition-all duration-500 ease-silk",
+            zenMode ? "my-auto scale-110 sm:scale-125" : "my-0",
+          )}
+        >
+          <PomodoroTimer
+            seconds={timer.seconds}
+            progress={timer.progress}
+            phase={timer.phase}
+            running={timer.running}
+            flow={timer.flowStudy}
+            topology={settings.topology}
+            onTopologyChange={zenMode ? undefined : (t) => updateSettings({ topology: t })}
           />
+
+          <div className="mt-6 w-full">
+            <Controls
+              phase={timer.phase}
+              running={timer.running}
+              flow={settings.flow}
+              studyMin={settings.studyMin}
+              breakMin={settings.breakMin}
+              onToggle={() => {
+                soundEngine.unlock();
+                timer.toggle();
+              }}
+              onReset={() => timer.reset()}
+              onTakeMoment={() => {
+                soundEngine.unlock();
+                if (timer.phase === "STUDY") {
+                  if (timer.getElapsedSec() >= 60) {
+                    timer.enterCheckIn();
+                    handleStudyComplete();
+                  } else {
+                    timer.startBreak({ autoStart: true });
+                  }
+                } else {
+                  timer.startStudy(false);
+                }
+              }}
+              onDurationsChange={(s, b) => updateSettings({ studyMin: s, breakMin: b })}
+              onFlowChange={(f) => updateSettings({ flow: f })}
+            />
+          </div>
         </div>
 
-        <div className="mt-16 flex justify-center gap-8 text-center text-sm font-serif opacity-70">
-          <div>
-            <div className="text-xl tabular-nums">{stats?.totalHours.toFixed(1) || "0.0"}h</div>
-            <div className="uppercase tracking-widest text-[10px]">Total</div>
-          </div>
-          <div>
-            <div className="text-xl tabular-nums">{stats?.avgProductivity.toFixed(1) || "0.0"}</div>
-            <div className="uppercase tracking-widest text-[10px]">Avg Prod</div>
-          </div>
-          <div>
-            <div className="text-xl tabular-nums">{stats?.totalSessions || 0}</div>
-            <div className="uppercase tracking-widest text-[10px]">Sessions</div>
-          </div>
+        {/* Ancillary Panels (Hidden during Zen mode) */}
+        <div
+          className={cn(
+            "w-full space-y-6 mt-12 transition-all duration-500",
+            zenMode ? "opacity-0 pointer-events-none translate-y-8" : "opacity-100 translate-y-0",
+          )}
+        >
+          <TodoList />
+          <AmbientSoundControls />
+          <SpotifyEmbed phase={timer.phase === "STUDY" ? "STUDY" : "BREAK"} />
         </div>
-
-        <SpotifyEmbed phase={phase === "STUDY" ? "STUDY" : "BREAK"} />
       </main>
 
-      <button 
-        onClick={() => setSidebarOpen(true)}
-        className="fixed bottom-8 right-8 bg-alabaster dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-xl rounded-full p-4 hover:scale-105 transition-transform"
-      >
-        <MessageSquareText className="w-6 h-6 text-racing-400" />
-      </button>
+      {/* Floating Action Buttons for Drawers (Hidden in Zen mode) */}
+      {!zenMode && (
+        <div className="fixed bottom-6 right-6 flex items-center gap-3 z-30">
+          <button
+            type="button"
+            onClick={() => setFormulaOpen(true)}
+            className="btn-ghost bg-canvas/90 shadow-glow rounded-full p-3.5 border-edge/80 hover:border-glow hover:scale-105"
+            aria-label="Open formula drawer"
+            title="Formula Sheet"
+          >
+            <Sigma className="h-5 w-5 text-glow" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setDoubtOpen(true)}
+            className="btn-primary shadow-glow rounded-full p-3.5 hover:scale-105"
+            aria-label="Open doubt solver"
+            title="Ask a Doubt"
+          >
+            <MessageSquareText className="h-5 w-5 text-onaccent" />
+          </button>
+        </div>
+      )}
 
-      <DoubtSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} subject={subject} />
-      
-      {phase === "CHECK_IN" && <CheckInModal onSave={handleCheckInSave} onSkip={handleCheckInSkip} />}
-      
+      {/* Drawers */}
+      <FormulaDrawer
+        open={formulaOpen && !zenMode}
+        onClose={() => setFormulaOpen(false)}
+        subject={settings.subject}
+      />
+      <DoubtSidebar
+        open={doubtOpen && !zenMode}
+        onClose={() => setDoubtOpen(false)}
+        subject={settings.subject}
+        onDoubtResolved={(doubt) => journalStore.addDoubt(doubt)}
+      />
+
+      {/* Modals & Dialogs */}
+      {timer.phase === "CHECK_IN" && (
+        <CheckInModal onSave={handleCheckInSave} onSkip={handleCheckInSkip} />
+      )}
+
+      <SocraticModal
+        open={socraticActive}
+        subject={settings.subject}
+        onComplete={() => setSocraticActive(false)}
+      />
+
+      <ExecutiveBriefModal
+        open={briefOpen}
+        onClose={() => setBriefOpen(false)}
+      />
+
+      <SettingsPanel
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        onExportJournal={handleExportJournal}
+      />
+
+      <CommandPalette
+        open={commandPaletteOpen}
+        commands={commands}
+        onClose={() => setCommandPaletteOpen(false)}
+      />
+
+      {/* Procrastination Interceptor Toast */}
       {nudgeState && nudgeState.visible && (
-        <InterceptorToast 
-          nudge={nudgeState.text} 
-          onResume={() => dismissNudge(true)} 
-          onDismiss={() => dismissNudge(false)} 
+        <InterceptorToast
+          nudge={nudgeState.text}
+          onResume={() => dismissNudge(true)}
+          onDismiss={() => dismissNudge(false)}
         />
       )}
     </div>

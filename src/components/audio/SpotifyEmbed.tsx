@@ -1,31 +1,84 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { useState } from "react";
 import { cn } from "../../lib/utils";
 
+const STUDY_PLAYLIST = process.env.NEXT_PUBLIC_SPOTIFY_STUDY_PLAYLIST || "0vvXsWCC9xrXsKd4FyS8kM";
+const BREAK_PLAYLIST = process.env.NEXT_PUBLIC_SPOTIFY_BREAK_PLAYLIST || "37i9dQZF1DXa2PvUpywmOO";
+const COLLAPSE_KEY = "silofocus-spotify-collapsed";
+
+/** Rounded Spotify embed that crossfades between study and break playlists and can be collapsed. */
 export function SpotifyEmbed({ phase }: { phase: "STUDY" | "BREAK" }) {
   const [collapsed, setCollapsed] = useState(false);
-  const url = phase === "STUDY" 
-    ? process.env.NEXT_PUBLIC_SPOTIFY_STUDY_PLAYLIST || "0vvXsWCC9xrXsKd4FyS8kM"
-    : process.env.NEXT_PUBLIC_SPOTIFY_BREAK_PLAYLIST || "37i9dQZF1DXa2PvUpywmOO";
+  const [shownPhase, setShownPhase] = useState(phase);
+  const [fading, setFading] = useState(false);
+
+  useEffect(() => {
+    try {
+      setCollapsed(window.localStorage.getItem(COLLAPSE_KEY) === "1");
+    } catch {
+      /* storage unavailable */
+    }
+  }, []);
+
+  useEffect(() => {
+    if (phase === shownPhase) return;
+    setFading(true);
+    const swap = window.setTimeout(() => {
+      setShownPhase(phase);
+      setFading(false);
+    }, 300);
+    return () => window.clearTimeout(swap);
+  }, [phase, shownPhase]);
+
+  const toggle = () => {
+    setCollapsed((c) => {
+      try {
+        window.localStorage.setItem(COLLAPSE_KEY, c ? "0" : "1");
+      } catch {
+        /* storage unavailable */
+      }
+      return !c;
+    });
+  };
+
+  const playlist = shownPhase === "STUDY" ? STUDY_PLAYLIST : BREAK_PLAYLIST;
 
   return (
-    <div className="w-full max-w-xl mx-auto mt-8 bg-stone-100/70 dark:bg-stone-900/60 border border-stone-200/80 dark:border-stone-800/80 rounded-2xl overflow-hidden transition-all duration-300">
-      <button onClick={() => setCollapsed(!collapsed)} className="w-full px-4 py-3 flex items-center justify-between text-sm font-medium hover:bg-stone-200/50 dark:hover:bg-stone-800/50 transition-colors">
-        <span>Ambience · {phase === "STUDY" ? "Lo-Fi Study" : "Acoustic Break"}</span>
-        {collapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+    <section className="card overflow-hidden" aria-label="Music">
+      <button
+        type="button"
+        onClick={toggle}
+        aria-expanded={!collapsed}
+        className="flex w-full items-center justify-between px-5 py-3.5 text-left transition-colors duration-300 hover:bg-ink/5"
+      >
+        <span className="text-sm text-ink">
+          <span className="eyebrow mr-3">Ambience</span>
+          {shownPhase === "STUDY" ? "Lo-Fi & Classical Study" : "Acoustic Break"}
+        </span>
+        {collapsed ? <ChevronDown className="h-4 w-4 text-subtle" /> : <ChevronUp className="h-4 w-4 text-subtle" />}
       </button>
-      <div className={cn("transition-all duration-500 overflow-hidden", collapsed ? "h-0 opacity-0" : "h-[152px] opacity-100")}>
-        <iframe 
-          key={url}
-          className="w-full"
-          src={`https://open.spotify.com/embed/playlist/${url}?utm_source=generator&theme=0`} 
-          width="100%" 
-          height="152" 
-          frameBorder="0" 
-          allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
-          loading="lazy" 
+      <div
+        className={cn(
+          "overflow-hidden transition-[height,opacity] duration-500 ease-silk",
+          collapsed ? "h-0 opacity-0" : "h-[152px]",
+          !collapsed && (fading ? "opacity-0" : "opacity-100"),
+        )}
+      >
+        <iframe
+          key={playlist}
+          title="Spotify player"
+          className="block w-full rounded-b-2xl"
+          src={`https://open.spotify.com/embed/playlist/${playlist}?utm_source=generator`}
+          width="100%"
+          height="152"
+          style={{ border: 0 }}
+          allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+          loading="lazy"
+          tabIndex={collapsed ? -1 : 0}
         />
       </div>
-    </div>
+    </section>
   );
 }
