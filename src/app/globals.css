@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #FBFBF9;
+  --surface: rgba(244, 244, 245, 0.7);
+  --ink: #1c1917;
+  --accent: #1E3A2F;
+  --brass: #B08D57;
+}
+
+.dark {
+  --bg: #0c0a09;
+  --surface: rgba(28, 25, 23, 0.6);
+  --ink: #f5f5f4;
+  --accent: #3F6B58;
+  --brass: #CDB07E;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--ink);
+}
+
+::selection {
+  background-color: rgba(176, 141, 87, 0.15);
+  color: inherit;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(176, 141, 87, 0.3);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(176, 141, 87, 0.5);
+}
+
+/* KaTeX custom color inherits */
+.katex {
+  color: inherit !important;
+}
+.katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.5rem 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
