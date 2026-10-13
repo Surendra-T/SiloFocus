@@ -19,7 +19,7 @@ By running **Gemma 2 9B locally via Ollama**, SiloFocus delivers elite STEM tuto
 
 ## 🧠 System Architecture
 
-GitHub natively renders the flowchart below. It details the flow of state, audio, and agentic LLM orchestration across the local hardware and cloud integrations.
+Flowchart below details the flow of state, audio, and agentic LLM orchestration across the local hardware and cloud integrations.
 
 ```mermaid
 graph TD
