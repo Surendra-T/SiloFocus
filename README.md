@@ -80,7 +80,7 @@ No MP3s. No loading lag. All audio is procedurally synthesized in the browser vi
 - **Monastic Zen Mode (`F`):** Smoothly fades out all peripheral UI, centering the active timepiece in pure focus space.
 
 ### IV. Multimodal AI & Integrations
-- **Google Gemini 1.5 Flash:** Massive context windows and edge-streamed responses for zero-latency STEM tutoring.
+- **Google Gemini 3.8 Flash:** Massive context windows and edge-streamed responses for zero-latency STEM tutoring.
 - **Native Browser TTS:** Zero-cost, client-side text-to-speech for hands-free study sessions.
 - **On-Demand Formula Drawer:** Auto-generates LaTeX-formatted reference sheets for Physics, Chemistry, and Mathematics.
 
