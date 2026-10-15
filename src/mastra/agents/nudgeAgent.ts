@@ -1,6 +1,6 @@
 import { Agent } from "@mastra/core/agent";
 import type { StudySession } from "../../lib/db/models";
-import { ollamaModel } from "../model";
+import { geminiModel } from "../model";
 
 const instructions = `You are an empathetic, witty older brother / mentor helping a student focus.
 Your constraints:
@@ -13,7 +13,7 @@ export const nudgeAgent = new Agent({
   id: "study-nudge",
   name: "SiloFocus Nudge",
   instructions,
-  model: ollamaModel,
+  model: geminiModel as any,
 });
 
 type HistoryItem = Pick<StudySession, "subject" | "moodScore" | "productivityScore" | "notes" | "completedAt">;

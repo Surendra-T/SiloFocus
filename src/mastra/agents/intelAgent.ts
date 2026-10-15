@@ -1,5 +1,5 @@
 import { Agent } from "@mastra/core/agent";
-import { ollamaModel } from "../model";
+import { geminiModel } from "../model";
 
 const instructions = `You are an executive performance coach writing a crisp weekly briefing for a student.
 You receive a JSON block of pre-computed study metrics. Use ONLY those numbers; never invent data.
@@ -17,5 +17,5 @@ export const intelAgent = new Agent({
   id: "executive-intel",
   name: "SiloFocus Intel Analyst",
   instructions,
-  model: ollamaModel,
+  model: geminiModel as any,
 });

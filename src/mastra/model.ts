@@ -1,7 +1,10 @@
-/** OpenAI-compatible model config pointing at the local Ollama instance. */
-export const ollamaModel = {
-  providerId: "ollama",
-  modelId: process.env.OLLAMA_MODEL || "gemma2:9b",
-  url: process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434/v1",
-  apiKey: "ollama",
+/** Gemini provider configuration reading GEMINI_API_KEY. */
+export const geminiModel = {
+  providerId: "google",
+  modelId: "gemini-3.8-flash",
+  url: "https://generativelanguage.googleapis.com/v1beta/openai",
+  apiKey: process.env.GEMINI_API_KEY as String
 };
+
+/** Alias for backward compatibility */
+export const ollamaModel = geminiModel;
