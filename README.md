@@ -1,40 +1,36 @@
 # 🏛️ SiloFocus
 
-> A privacy-first, zero-runtime-cost AI study companion and kinetic timepiece. Built with local open-weight models, procedural audio, and fluid kinetic UI.
+> A privacy-first, zero-runtime-cost AI study companion and kinetic timepiece. Built with Google Gemini Flash, procedural audio, and an Apple-grade kinetic UI.
 
-[![Hacktoberfest 2026](https://img.shields.io/badge/Hacktoberfest-2026-orange)](https://hacktoberfest.com)
 [![Next.js](https://img.shields.io/badge/Next.js-14+-black)](https://nextjs.org)
-[![Mastra](https://img.shields.io/badge/Agent-Mastra-blue)](https://mastra.ai)
-[![Ollama](https://img.shields.io/badge/Local_AI-Gemma_2-white)](https://ollama.com)
+[![PWA](https://img.shields.io/badge/PWA-Ready-blue)](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps)
+[![AI](https://img.shields.io/badge/AI-Gemini_3.8_Flash-orange)](https://aistudio.google.com/)
+[![Deployment](https://img.shields.io/badge/Deployed-Vercel-black)](https://vercel.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
-![Screenshot 1: The Kinetic Timepiece & Zen Mode](docs/S1.png)
-*Above: SiloFocus running the Vintage Split-Flap topology in 'Old Money Heritage' mode.*
+![Screenshot 1: The Kinetic Timepiece & Zen Mode](docs/S2.pngg)
+*Above: SiloFocus running the Vintage Split-Flap topology in mode.*
 
-**SiloFocus** was built for the Major League Hacking (MLH) Hacktoberfest 2026 "Build for a Friend" challenge. Designed originally to help a student conquer 12th Board Exam burnout, it has evolved into a hyper-customizable, universally adaptable focus environment. 
+**SiloFocus** was originally prototyped as a Hacktoberfest project to help a student conquer 12th Board Exam burnout. It has since been re-architected into a production-grade, installable Progressive Web App (PWA).
 
-By running **Gemma 2 9B locally via Ollama**, SiloFocus delivers elite STEM tutoring and active recall quizzes with absolute data privacy and zero API costs.
+Powered by **Google Gemini 3.8 Flash**, SiloFocus delivers elite STEM tutoring, procedural soundscapes, and active recall quizzes within a highly optimized, distraction-free desktop environment.
 
 ---
 
 ## 🧠 System Architecture
 
-Flowchart below details the flow of state, audio, and agentic LLM orchestration across the local hardware and cloud integrations.
-
 ```mermaid
 graph TD
-    subgraph Client [Browser / Frontend]
+    subgraph Client [Desktop PWA / Browser]
         UI[Next.js App Router UI]
         Audio[Procedural Web Audio API]
-        Canvas[HTML5 Favicon Canvas]
-        CmdK[Cmd+K Spotlight]
+        TTS[Native Window Speech Synthesis]
+        ServiceWorker[PWA Service Worker]
     end
 
-    subgraph Backend [Next.js API Routes]
+    subgraph Edge [Vercel Edge Network]
         RouteChat[/api/chat - Doubt Solver/]
-        RouteQuiz[/api/quiz - Socratic Recall/]
-        RouteIntel[/api/intel - RAG Brief/]
-        RouteTTS[/api/tts - Voice/]
+        RouteFormula[/api/formula - Generator/]
     end
 
     subgraph Orchestration [Mastra Framework]
@@ -42,35 +38,29 @@ graph TD
         AgentNudge((nudgeAgent))
     end
 
-    subgraph Local Inference [Local Hardware]
-        Ollama[Ollama API :11434]
-        Gemma[Gemma 2 9B]
-    end
-
-    subgraph Cloud Sponsors [Sponsor APIs]
+    subgraph Cloud Infrastructure [External APIs]
+        Gemini[Google Gemini 3.8 Flash]
         MongoDB[(MongoDB Atlas)]
-        ElevenLabs[ElevenLabs TTS API]
         Sentry[Sentry Tracing]
     end
 
-    UI <-->|State/Idle Events| Backend
+    UI <-->|Streaming State| Edge
     Audio --> UI
-    Backend <-->|Workflow Logic| Orchestration
-    Orchestration <-->|Local Queries| Ollama
-    Ollama <--> Gemma
+    TTS --> UI
+    ServiceWorker --> UI
+    Edge <-->|Workflow Logic| Orchestration
+    Orchestration <-->|API Stream| Gemini
     
-    RouteIntel <-->|Vector/History| MongoDB
-    RouteTTS <-->|Audio Stream| ElevenLabs
-    RouteChat -.->|Traced via| Sentry
-    RouteNudge -.->|Traced via| Sentry
+    Edge <-->|Vector/History| MongoDB
+    Edge -.->|Traced via| Sentry
 ```
 
 ---
 
-## ✨ The 5 Pillars of Engineering
+## 🏛️ The 5 Pillars of Engineering
 
 ### I. Kinetic Timepiece Topologies
-SiloFocus features a fluid kinetic animation engine featuring 60fps hardware-accelerated digit rolling (`tabular-nums` + `translate3d`).
+SiloFocus features an Apple-grade kinetic animation engine featuring 60fps hardware-accelerated digit rolling (`tabular-nums` + `translate3d`).
 
 | Topology | Description |
 | :--- | :--- |
@@ -79,85 +69,65 @@ SiloFocus features a fluid kinetic animation engine featuring 60fps hardware-acc
 | **Bauhaus Analog** | Clean minimalist dial with second and minute sweep hands. |
 | **Linear Pillar** | Mercury-column vertical progress bar with GPU-accelerated scaling. |
 
-**Flowmodoro Mode:** Open-ended count-up stopwatch with a glowing pulse state for deep work sessions.
-
-![Screenshot: Haute Aesthetics](docs/S2.png)
-*Above: Toggling between the 5 curated Haute Aesthetics.*
-
 ### II. Procedural Web Audio Engine
 No MP3s. No loading lag. All audio is procedurally synthesized in the browser via `AudioContext`.
-* **Mechanical Ticks:** Grandfather Clock (112Hz dual pendulum), Pocket Watch (high-pass burst escapement), and Soft Tactile micro-clicks.
-* **Resonant Chimes:** Kyoto Singing Bowl (dual harmonic oscillators with a 4.5s decay), Shinkansen Chimes, and Brass Desk Bells.
-* **Ambient Soundscapes:** Procedural Brown Noise, Pink Noise, and generative Rain simulations.
+- **Mechanical Ticks:** Grandfather Clock (112Hz dual pendulum), Pocket Watch (high-pass burst escapement).
+- **Resonant Chimes:** Kyoto Singing Bowl (dual harmonic oscillators with a 4.5s decay).
+- **Ambient Soundscapes:** Procedural Brown Noise, Pink Noise, and generative Rain simulations.
 
 ### III. Haute Aesthetic & Zen Mode
-* **5 Curated Palettes:** Old Money Heritage, Dark Academia, Kyoto Wabi-Sabi, Nordic Mono, and Midnight Obsidian.
-* **Atmospheric Grain:** A toggleable full-viewport SVG `<feTurbulence>` noise film.
-* **Monastic Zen Mode (F):** Smoothly fades out all peripheral UI, centering the active timepiece in pure focus space.
-
-![Screenshot: Command tool Navigation](docs/S3.png)
-*Above: Command tool showing instant navigation perfectly rendered menu.*
+- **5 Curated Palettes:** *Old Money Heritage*, *Dark Academia*, *Kyoto Wabi-Sabi*, *Nordic Mono*, and *Midnight Obsidian*.
+- **Monastic Zen Mode (`F`):** Smoothly fades out all peripheral UI, centering the active timepiece in pure focus space.
 
 ### IV. Multimodal AI & Integrations
-* **Voice Dictation & TTS:** Hands-free speech-to-text input, paired with ElevenLabs for crystal clear audio playback (with native browser fallback).
-* **Gemma 2 Socratic Pop-Quiz:** Intercepts break transitions to prompt the student with one sharp, conceptual recall question.
-* **Executive Intel Brief:** Aggregates MongoDB study metrics and prompts Gemma 2 to draft an executive performance analysis.
-
-![Screenshot: Settings Menu](docs/S4.png)
-*Above: Displaying the app's settings menu for customization.*
+- **Google Gemini 1.5 Flash:** Massive context windows and edge-streamed responses for zero-latency STEM tutoring.
+- **Native Browser TTS:** Zero-cost, client-side text-to-speech for hands-free study sessions.
+- **On-Demand Formula Drawer:** Auto-generates LaTeX-formatted reference sheets for Physics, Chemistry, and Mathematics.
 
 ### V. Ergonomics & Productivity
-* **Notion-Style Task Checklist:** Inline inputs, animated strikethroughs, and `localStorage` persistence.
-* **Spotlight Command Palette (Cmd+K):** Keyboard-first navigation for all core actions.
-* **Dynamic Canvas Favicon:** A real-time HTML5 canvas draws the live progress ring directly onto the browser tab.
-* **Markdown Journal Exporter:** One-click compilation of daily focus blocks, tasks, and doubts into a downloadable `.md` file.
-
-![Screenshot: Sentry Dashboard](docs/S5.png)
-*Above: Sentry dashboard tracing the sub-second data of the local Gemma 2 model.*
+- **Progressive Web App (PWA):** Fully installable as a standalone desktop application.
+- **Spotlight Command Palette (`Cmd+K`):** Keyboard-first navigation for all core actions.
+- **Markdown Journal Exporter:** One-click compilation of daily focus blocks into `.md` files.
 
 ---
 
-## 🛠️ Tech Stack & Hacktoberfest 2026 Sponsors
+## 🛠️ Tech Stack
 
-This project stacks technologies from 6 major Hacktoberfest 2026 sponsors:
-
-| Sponsor | Integration Role |
+| Technology | Integration Role |
 | :--- | :--- |
-| **Gemma** | Local open-weight inference (`gemma2:9b`) via Ollama. |
-| **Mastra** | Agentic state orchestration (`studyAgent` & `nudgeAgent`). |
-| **ElevenLabs** | Crystal-clear Text-to-Speech streaming API. |
-| **MongoDB Atlas** | Persistent memory storage for session history and RAG analytics. |
-| **Sentry** | Telemetry and exact millisecond latency tracing of local LLM endpoints. |
-| **Render** | Deployment infrastructure for the Next.js frontend bridge. |
-
-**Core Frameworks:** Next.js 14+ (App Router), TypeScript, Tailwind CSS, Web Audio API, Web Speech API.
+| **Google Gemini 3.8 Flash** | Core AI inference for Socratic tutoring and nudges. |
+| **Vercel** | Edge network deployment and CI/CD. |
+| **Mastra** | Agentic state orchestration. |
+| **MongoDB Atlas** | Persistent memory storage for session history. |
+| **Sentry** | Telemetry and exception tracking. |
+| **next-pwa** | Desktop installability and offline service workers. |
 
 ---
 
-## 🚀 Quick Start (Run Locally)
+## 🚀 Installation & Usage
 
-**1. Start Local AI Engine:**
-Download Ollama and run the model in your terminal:
-```bash
-ollama run gemma2:9b
-```
+### Method 1: Install as a Native App (Recommended)
+1. Visit the live deployment URL.
+2. Click the **"Install"** icon in your browser's search bar (or **"Add to Home Screen"** on mobile).
+3. SiloFocus will install to your device and run as a standalone window.
 
-**2. Clone & Install:**
-```bash
-git clone [https://github.com/your-username/SiloFocus.git](https://github.com/your-username/SiloFocus.git)
-cd SiloFocus
-npm install
-```
+### Method 2: Run Locally (For Developers)
 
-**3. Configure Environment:**
-Rename `.env.example` to `.env.local` and add your keys (MongoDB, ElevenLabs, Sentry).
+1. **Clone the repository:**
+   ```bash
+   git clone [https://github.com/Surendra-T/SiloFocus.git](https://github.com/Surendra-T/SiloFocus.git)
+   cd SiloFocus
+   npm install
+   ```
 
-**4. Seed Database & Run:**
-```bash
-npm run seed
-npm run dev
-```
+2. **Configure `.env.local`:**
+   ```env
+   GEMINI_API_KEY="your_google_ai_studio_key"
+   MONGODB_URI="your_mongo_string"
+   NEXT_PUBLIC_SENTRY_DSN="your_sentry_dsn" (optional)
+   ```
 
-Open `http://localhost:3000`.
-
-> *Built with excessive amounts of coffee for Hacktoberfest 2026.*
+3. **Run the development server:**
+   ```bash
+   npm run dev
+   ```

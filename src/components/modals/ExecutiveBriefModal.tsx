@@ -101,7 +101,7 @@ export function ExecutiveBriefModal({ open, onClose }: ExecutiveBriefModalProps)
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <LoaderCircle className="h-8 w-8 animate-spin text-glow mb-3" />
             <p className="text-sm font-medium text-ink">Synthesizing weekly telemetry...</p>
-            <p className="text-xs text-subtle mt-1">Gemma 2 is evaluating habits and time-of-day momentum</p>
+            <p className="text-xs text-subtle mt-1">Gemini Flash is evaluating habits and time-of-day momentum</p>
           </div>
         )}
 
