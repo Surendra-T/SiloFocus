@@ -52,6 +52,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${serif.variable} ${sans.variable} ${roman.variable}`}
     >
       <head>
+        <meta name="theme-color" content="#1E3A2F" />
+        <link rel="manifest" href="/manifest.json" />
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
         <link id="silo-favicon" rel="icon" type="image/svg+xml" href={DEFAULT_FAVICON} />
       </head>

@@ -1,5 +1,5 @@
 import { Agent } from "@mastra/core/agent";
-import { ollamaModel } from "../model";
+import { geminiModel } from "../model";
 
 const instructions = `You are a world-class, patient academic tutor.
 Your default specialty is 12th Board examinations (CBSE/State Board level) in Physics, Chemistry and Mathematics/Calculus. For any other subject the student names, adapt to that discipline and teach at the level the question implies.
@@ -19,5 +19,5 @@ export const studyAgent = new Agent({
   id: "study-tutor",
   name: "SiloFocus Tutor",
   instructions,
-  model: ollamaModel,
+  model: geminiModel as any,
 });

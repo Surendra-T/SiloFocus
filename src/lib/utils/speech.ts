@@ -30,3 +30,27 @@ export function toSpeakableText(markdown: string, maxChars = 2500): string {
     .trim()
     .slice(0, maxChars);
 }
+
+/** Speaks text using native browser speechSynthesis with en-GB fallback. */
+export function speakText(text: string): Promise<void> {
+  return new Promise((resolve) => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+      resolve();
+      return;
+    }
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    const voices = window.speechSynthesis.getVoices();
+    const voice =
+      voices.find((v) => v.lang === "en-GB" || v.lang.startsWith("en-GB")) ||
+      voices.find((v) => v.lang.startsWith("en")) ||
+      voices[0];
+    if (voice) {
+      utterance.voice = voice;
+    }
+    utterance.onend = () => resolve();
+    utterance.onerror = () => resolve();
+    window.speechSynthesis.speak(utterance);
+  });
+}
+

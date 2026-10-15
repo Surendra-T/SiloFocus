@@ -1,5 +1,5 @@
 import { Agent } from "@mastra/core/agent";
-import { ollamaModel } from "../model";
+import { geminiModel } from "../model";
 
 const instructions = `You are a Socratic examiner running a 30-second active-recall check right after a study session.
 
@@ -16,5 +16,5 @@ export const quizAgent = new Agent({
   id: "socratic-quiz",
   name: "SiloFocus Socratic Examiner",
   instructions,
-  model: ollamaModel,
+  model: geminiModel as any,
 });
