@@ -198,7 +198,7 @@ export function SettingsPanel({ open, onClose, onExportJournal }: SettingsPanelP
         </Section>
 
         <Section title="Focus">
-          <Row label="Socratic Active Recall on Break" hint="Gemma 2 asks one question before each break">
+          <Row label="Socratic Active Recall on Break" hint="Gemini Flash asks one question before each break">
             <Switch checked={settings.socratic} onChange={(socratic) => update({ socratic })} label="Socratic Active Recall on Break" />
           </Row>
         </Section>

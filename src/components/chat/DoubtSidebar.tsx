@@ -240,7 +240,7 @@ export function DoubtSidebar({ open, onClose, subject, onDoubtResolved }: DoubtS
           <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
             <Sparkles className="h-6 w-6 text-glow" />
             <p className="max-w-[16rem] text-sm text-subtle">
-              Dump a problem, type it or dictate it. Gemma 2 will walk through it step by step.
+              Dump a problem, type it or dictate it. Gemini Flash will walk through it step by step.
             </p>
             <div className="flex flex-wrap justify-center gap-2">
               {SUGGESTIONS.map((s) => (

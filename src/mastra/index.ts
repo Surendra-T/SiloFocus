@@ -4,7 +4,7 @@ import { nudgeAgent } from "./agents/nudgeAgent";
 import { quizAgent } from "./agents/quizAgent";
 import { intelAgent } from "./agents/intelAgent";
 
-export { geminiModel, ollamaModel } from "./model";
+export { geminiModel } from "./model";
 
 export const mastra = new Mastra({
   agents: { studyAgent, nudgeAgent, quizAgent, intelAgent },

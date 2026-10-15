@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  return Sentry.startSpan({ name: "gemma-executive-brief", op: "ai.inference" }, async () => {
+  return Sentry.startSpan({ name: "gemini-executive-brief", op: "ai.inference" }, async () => {
     try {
       const out = await intelAgent.generate(
         [{ role: "user", content: `Write the briefing from these metrics (last ${WINDOW_DAYS} days):\n${JSON.stringify(metrics)}` }],

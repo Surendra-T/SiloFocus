@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
     const answer = typeof body.answer === "string" ? body.answer.trim().slice(0, 1200) : "";
     if (!question || !answer) return NextResponse.json({ error: "Question and answer required" }, { status: 400 });
 
-    return Sentry.startSpan({ name: "gemma-socratic-evaluate", op: "ai.inference", attributes: { subject } }, async () => {
+    return Sentry.startSpan({ name: "gemini-socratic-evaluate", op: "ai.inference", attributes: { subject } }, async () => {
       try {
         const out = await quizAgent.generate(
           [{ role: "user", content: `Evaluate this answer.\nSubject: ${subject}\nQuestion: ${question}\nStudent answer: ${answer}` }],
@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
   }
 
   const hint = await topicHint(subject);
-  return Sentry.startSpan({ name: "gemma-socratic-question", op: "ai.inference", attributes: { subject } }, async () => {
+  return Sentry.startSpan({ name: "gemini-socratic-question", op: "ai.inference", attributes: { subject } }, async () => {
     try {
       const out = await quizAgent.generate(
         [

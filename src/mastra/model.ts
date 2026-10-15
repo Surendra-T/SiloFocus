@@ -3,8 +3,5 @@ export const geminiModel = {
   providerId: "google",
   modelId: "gemini-3.8-flash",
   url: "https://generativelanguage.googleapis.com/v1beta/openai",
-  apiKey: process.env.GEMINI_API_KEY as String
+  apiKey: process.env.GEMINI_API_KEY as String,
 };
-
-/** Alias for backward compatibility */
-export const ollamaModel = geminiModel;

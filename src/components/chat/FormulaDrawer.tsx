@@ -45,12 +45,20 @@ export function FormulaDrawer({ open, onClose, subject }: FormulaDrawerProps) {
     let text = "";
     let completed = false;
     try {
-      const res = await fetch("/api/chat", {
+      let res = await fetch("/api/formula", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mode: "formula", subject, message: "", history: [] }),
+        body: JSON.stringify({ subject }),
         signal: controller.signal,
       });
+      if (!res.ok) {
+        res = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ mode: "formula", subject, message: "", history: [] }),
+          signal: controller.signal,
+        });
+      }
       if (!res.ok || !res.body) {
         const err = (await res.json().catch(() => null)) as { error?: string } | null;
         throw new Error(err?.error ?? "Could not generate a sheet right now.");
@@ -117,7 +125,7 @@ export function FormulaDrawer({ open, onClose, subject }: FormulaDrawerProps) {
             <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
               <Sparkles className="h-6 w-6 text-glow" />
               <p className="max-w-[16rem] text-sm text-subtle">
-                No built-in sheet for “{subject}”. Generate one with Gemma 2 and it will be saved for next time.
+                No built-in sheet for “{subject}”. Generate one with Gemini Flash and it will be saved for next time.
               </p>
             </div>
           )

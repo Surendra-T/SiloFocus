@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
     console.error("[nudge] history unavailable", err);
   }
 
-  return Sentry.startSpan({ name: "gemma-nudge", op: "ai.inference", attributes: { subject } }, async () => {
+  return Sentry.startSpan({ name: "gemini-nudge", op: "ai.inference", attributes: { subject } }, async () => {
     try {
       const out = await nudgeAgent.generate([{ role: "user", content: buildNudgePrompt(history, subject, idle) }], {
         abortSignal: AbortSignal.timeout(25_000),
