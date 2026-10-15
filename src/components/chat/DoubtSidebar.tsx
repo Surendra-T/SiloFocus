@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowUp, Check, Copy, LoaderCircle, Mic, MicOff, Sparkles, Square, Trash2, Volume2, VolumeX, X } from "lucide-react";
 import { cn } from "../../lib/utils";
-import { toSpeakableText } from "../../lib/utils/speech";
+import { toSpeakableText, speakText } from "../../lib/utils/speech";
 import { useSpeechRecognition } from "../../lib/hooks/useSpeechRecognition";
 import type { DoubtEntry } from "../../lib/hooks/useJournalStore";
 import { DrawerShell } from "../common/DrawerShell";
@@ -35,7 +35,6 @@ export function DoubtSidebar({ open, onClose, subject, onDoubtResolved }: DoubtS
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
-  const audioRef = useRef<{ audio: HTMLAudioElement; url: string } | null>(null);
   const speechToken = useRef(0);
   const dictationBase = useRef("");
 
@@ -88,11 +87,6 @@ export function DoubtSidebar({ open, onClose, subject, onDoubtResolved }: DoubtS
 
   const stopSpeech = useCallback(() => {
     speechToken.current += 1;
-    if (audioRef.current) {
-      audioRef.current.audio.pause();
-      URL.revokeObjectURL(audioRef.current.url);
-      audioRef.current = null;
-    }
     if (typeof window !== "undefined" && "speechSynthesis" in window) window.speechSynthesis.cancel();
     setSpeaking(null);
   }, []);
@@ -178,20 +172,6 @@ export function DoubtSidebar({ open, onClose, subject, onDoubtResolved }: DoubtS
     }
   };
 
-  const speakWithBrowser = (text: string, index: number, token: number) => {
-    if (token !== speechToken.current) return;
-    if (!("speechSynthesis" in window)) {
-      setSpeaking(null);
-      return;
-    }
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.onend = () => token === speechToken.current && setSpeaking(null);
-    utterance.onerror = () => token === speechToken.current && setSpeaking(null);
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(utterance);
-    setSpeaking({ index, loading: false });
-  };
-
   const speak = async (index: number) => {
     if (speaking?.index === index) {
       stopSpeech();
@@ -201,36 +181,14 @@ export function DoubtSidebar({ open, onClose, subject, onDoubtResolved }: DoubtS
     const text = toSpeakableText(messages[index]?.content ?? "");
     if (!text) return;
     const token = speechToken.current;
-    setSpeaking({ index, loading: true });
+    setSpeaking({ index, loading: false });
 
     try {
-      const res = await fetch("/api/tts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
-      });
-      if (token !== speechToken.current) return;
-      if (res.ok && (res.headers.get("content-type") ?? "").includes("audio")) {
-        const blob = await res.blob();
-        if (token !== speechToken.current) return;
-        const url = URL.createObjectURL(blob);
-        const audio = new Audio(url);
-        const cleanup = () => {
-          if (token !== speechToken.current) return;
-          URL.revokeObjectURL(url);
-          audioRef.current = null;
-          setSpeaking(null);
-        };
-        audio.onended = cleanup;
-        audio.onerror = cleanup;
-        audioRef.current = { audio, url };
-        await audio.play();
-        setSpeaking({ index, loading: false });
-        return;
+      await speakText(text);
+    } finally {
+      if (token === speechToken.current) {
+        setSpeaking(null);
       }
-      speakWithBrowser(text, index, token);
-    } catch {
-      speakWithBrowser(text, index, token);
     }
   };
 
