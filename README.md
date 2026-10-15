@@ -8,7 +8,7 @@
 [![Deployment](https://img.shields.io/badge/Deployed-Vercel-black)](https://vercel.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
-![Screenshot 1: The Kinetic Timepiece & Zen Mode](docs/S2.pngg)
+![Screenshot 1: The Kinetic Timepiece & Zen Mode](docs/S2.png)
 *Above: SiloFocus running the Vintage Split-Flap topology in mode.*
 
 **SiloFocus** was originally prototyped as a Hacktoberfest project to help a student conquer 12th Board Exam burnout. It has since been re-architected into a production-grade, installable Progressive Web App (PWA).
